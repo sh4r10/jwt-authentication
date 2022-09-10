@@ -87,10 +87,13 @@ router.delete('/logout', async (req, res) => {
     process.env.REFRESH_TOKEN_SECRET,
     async (err, refreshTokenData) => {
       if (err) return res.sendStatus(403)
-      const token = await Token.findOne({ user: refreshTokenData.id })
-      const match = bcrypt.compare(refreshToken, token.token)
+      const tokens = await Token.find({ user: refreshTokenData.id })
+      const match = tokens.some((t) => bcrypt.compare(refreshToken, t.token))
       if (!match) return res.sendStatus(403)
-      await Token.deleteOne({ user: refreshTokenData.id })
+      const matchedToken = tokens.filter((t) =>
+        bcrypt.compare(refreshToken, t.token)
+      )
+      await Token.deleteOne({ id: matchedToken._id })
       res.clearCookie('refreshToken')
       res.json('Logged out')
     }
